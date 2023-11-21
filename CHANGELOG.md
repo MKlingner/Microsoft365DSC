@@ -1,5 +1,8 @@
 # Change log for Microsoft365DSC
 
+* AADRoleSetting
+  * Export sorted by DisplayName for better comparison
+  * Enable Filter property to be used on export
 * SPOSharingSettings
   * Fixes typo to reenable export of ExternalUserExpireInDays and ExternalUserExpirationRequired.
 
