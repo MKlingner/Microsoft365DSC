@@ -222,7 +222,6 @@ function Get-TargetResource
             $allFilter = "scopeId eq '/' and scopeType eq 'DirectoryRole'"
             $Script:PolicyAssignments = Get-MgBetaPolicyRoleManagementPolicyAssignment -Filter $allFilter -All
         }
-        $Policy = $Script:PolicyAssignments | Where-Object -FilterScript {$_.RoleDefinitionId -eq $Id}
     }
     catch
     {
@@ -232,18 +231,24 @@ function Get-TargetResource
             return $nullReturn
         }
     }
-
-    if ($null -eq $Policy)
-    {
-        return $nullReturn
-    }
     if ($null -ne $Script:exportedInstances -and $Script:ExportMode)
     {
         $RoleDefinition = $Script:exportedInstances | Where-Object -FilterScript {$_.Id -eq $Id}
     }
     else
     {
-        $RoleDefinition = Get-MgBetaRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $Id
+        try
+        {
+            $RoleDefinition = Get-MgBetaRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $Id -ErrorAction Stop
+        }
+        catch
+        {
+            if($_.FullyQualifiedErrorId -ne 'Request_ResourceNotFound,Microsoft.Graph.Beta.PowerShell.Cmdlets.GetMgBetaRoleManagementDirectoryRoleDefinition_Get')
+            {
+                throw $_
+            }
+            $RoleDefinition = $null
+        }
     }
 
     if ($null -eq $RoleDefinition -and -not [System.String]::IsNullOrEmpty($Displayname))
@@ -256,6 +261,16 @@ function Get-TargetResource
         {
             $RoleDefinition = Get-MgBetaRoleManagementDirectoryRoleDefinition -Filter "DisplayName eq '$DisplayName'"
         }
+    }
+    if ($null -eq $RoleDefinition)
+    {
+        return $nullReturn
+    }
+
+    $Policy = $Script:PolicyAssignments | Where-Object -FilterScript {$_.RoleDefinitionId -eq $RoleDefinition.Id}
+    if ($null -eq $Policy)
+    {
+        return $nullReturn
     }
 
     #get Policyrule
@@ -326,7 +341,7 @@ function Get-TargetResource
     {
         Write-Verbose -Message "Found configuration of Rule $($Displayname)"
         $result = @{
-            Id                                                        = $Id
+            Id                                                        = $RoleDefinition.Id
             DisplayName                                               = $DisplayName
             ActivationMaxDuration                                     = $ActivationMaxDuration
             ActivationReqJustification                                = $ActivationReqJustification

@@ -3,6 +3,7 @@
 * AADRoleSetting
   * Export sorted by DisplayName for better comparison
   * Enable Filter property to be used on export
+  * Fixes import of Custom Role Definition not found by Id
 * SPOSharingSettings
   * Fixes typo to reenable export of ExternalUserExpireInDays and ExternalUserExpirationRequired.
 

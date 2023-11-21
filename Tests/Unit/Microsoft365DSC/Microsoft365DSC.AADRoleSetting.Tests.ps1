@@ -44,6 +44,7 @@ Describe -Name $Global:DscHelper.DescribeHeader -Fixture {
             Mock -CommandName Get-MgBetaRoleManagementDirectoryRoleDefinition -MockWith {
                 return @{
                     DisplayName = 'User administrator'
+                    Id          = 'fe930be7-5e62-47db-91af-98c3a49a38b1'
                 }
             }
 
@@ -632,6 +633,34 @@ Describe -Name $Global:DscHelper.DescribeHeader -Fixture {
             It 'Should call the set method' {
                 Set-TargetResource @testParams
                 Should -Invoke -CommandName 'Update-MgBetaPolicyRoleManagementPolicyRule' -Exactly 15
+            }
+        }
+
+        Context -Name 'Id not present in target' -Fixture {
+            BeforeAll {
+                $testParams = @{
+                    ApplicationId                                             = $ConfigurationData.NonNodeData.ApplicationId
+                    CertificateThumbprint                                     = $ConfigurationData.NonNodeData.CertificateThumbprint
+                    Displayname                                               = 'User administrator'
+                    Id                                                        = '00000000-0000-0000-1111-000000000000'
+                }
+
+                Mock -CommandName New-M365DSCConnection -MockWith {
+                    return 'Credentials'
+                }
+
+                Mock -CommandName Get-MgBetaRoleManagementDirectoryRoleDefinition -ParameterFilter {$UnifiedRoleDefinitionId -eq '00000000-0000-0000-1111-000000000000'} -MockWith {
+                    throw 'Request_ResourceNotFound,Microsoft.Graph.Beta.PowerShell.Cmdlets.GetMgBetaRoleManagementDirectoryRoleDefinition_Get'
+                }
+
+                Mock -CommandName Update-MgBetaPolicyRoleManagementPolicyRule -MockWith {
+                }
+            }
+
+            It 'Should find role by DisplayName' {
+                $result = Get-TargetResource @testParams
+                $result | Should -Not -BeNullOrEmpty
+                $resut.Id | Should -Not -Be '00000000-0000-0000-1111-000000000000'
             }
         }
 
